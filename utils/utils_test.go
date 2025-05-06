@@ -1,6 +1,7 @@
-package main
+package utils
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -46,9 +47,12 @@ func TestCompetitionScenario(t *testing.T) {
 
 	expectedReport := "[NotFinished] 1 [{00:29:03.872, 2.094}, {,}] {00:01:52.476, 0.445} 4/5" //  wrong data in readme - fixed here
 
-	processor := createProcessor(config, events)
-	logOutput := processor.ProcessEvents()
-	reportOutput := processor.GenerateSummary()
+	p, err := NewProcessor(config, events)
+	if err != nil {
+		t.Fatalf("NewProcessor failed: %v", err)
+	}
+	logOutput := p.ProcessEvents()
+	reportOutput := p.GenerateSummary()
 
 	if logOutput != expectedLog {
 		t.Errorf("Log output doesn't match expected:\nGot:\n%s\n\nExpected:\n%s", logOutput, expectedLog)
@@ -58,7 +62,7 @@ func TestCompetitionScenario(t *testing.T) {
 		t.Errorf("Report output doesn't match expected:\nGot: %s\nExpected: %s", reportOutput, expectedReport)
 	}
 
-	competitor := processor.competitors[1]
+	competitor := p.competitors[1]
 	if competitor == nil {
 		t.Fatal("Competitor not found")
 	}
@@ -87,7 +91,10 @@ func TestRegistrationAndStart(t *testing.T) {
 [09:29:45.734] 3 1
 [09:30:01.005] 4 1`
 
-	p := createProcessor(config, events)
+	p, err := NewProcessor(config, events)
+	if err != nil {
+		t.Fatalf("NewProcessor failed: %v", err)
+	}
 	log := p.ProcessEvents()
 
 	if len(p.competitors) != 1 {
@@ -123,7 +130,10 @@ func TestDisqualification(t *testing.T) {
 [09:29:45.734] 3 1
 [09:30:31.005] 4 1`
 
-	p := createProcessor(config, events)
+	p, err := NewProcessor(config, events)
+	if err != nil {
+		t.Fatalf("NewProcessor failed: %v", err)
+	}
 	p.ProcessEvents()
 
 	c := p.competitors[1]
@@ -148,7 +158,10 @@ func TestCannotContinue(t *testing.T) {
 [09:30:01.005] 4 1
 [09:59:03.872] 11 1 Lost in the forest`
 
-	p := createProcessor(config, events)
+	p, err := NewProcessor(config, events)
+	if err != nil {
+		t.Fatalf("NewProcessor failed: %v", err)
+	}
 	p.ProcessEvents()
 	report := p.GenerateSummary()
 
@@ -160,5 +173,42 @@ func TestCannotContinue(t *testing.T) {
 	expectedReport := "[NotFinished] 1 [{,}, {,}] {00:00:00.000, 0.000} 0/5"
 	if report != expectedReport {
 		t.Errorf("Report doesn't match expected:\nGot: %s\nExpected: %s", report, expectedReport)
+	}
+}
+
+func TestEventCount(t *testing.T) {
+	config := `{
+		"laps": 2,
+		"lapLen": 3651,
+		"penaltyLen": 50,
+		"firingLines": 1,
+		"start": "09:30:00",
+		"startDelta": "00:00:30"
+	}`
+
+	events := `[09:05:59.867] 1 1
+[09:15:00.841] 2 1 09:30:00.000
+[09:29:45.734] 3 1
+[09:30:01.005] 4 1
+[09:49:31.659] 5 1 1
+[09:49:33.123] 6 1 1
+[09:49:34.650] 6 1 2
+[09:49:35.937] 6 1 4
+[09:49:37.364] 6 1 5
+[09:49:38.339] 7 1
+[09:49:55.915] 8 1
+[09:51:48.391] 9 1
+[09:59:03.872] 10 1
+[09:59:03.872] 11 1 Lost in the forest`
+
+	p, err := NewProcessor(config, events)
+	if err != nil {
+		t.Fatalf("NewProcessor failed: %v", err)
+	}
+
+	inputLines := strings.Split(events, "\n")
+	if len(p.eventQueue) != len(inputLines) {
+		t.Errorf("Event count mismatch. Expected %d events (one per line), got %d",
+			len(inputLines), len(p.eventQueue))
 	}
 }

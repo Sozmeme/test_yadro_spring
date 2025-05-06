@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"encoding/json"
@@ -11,11 +11,11 @@ import (
 
 const layout = "15:04:05.000"
 
-func createProcessor(config string, events string) *Processor {
+func NewProcessor(config string, events string) (*Processor, error) {
 	var cfg Config
 	err := json.Unmarshal([]byte(config), &cfg)
 	if err != nil {
-		panic("invalid configuration: " + err.Error())
+		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	processor := &Processor{
@@ -78,9 +78,8 @@ func createProcessor(config string, events string) *Processor {
 		}
 	}
 
-	return processor
+	return processor, nil
 }
-
 func (p *Processor) ProcessEvents() string {
 	var outputLines []string
 
