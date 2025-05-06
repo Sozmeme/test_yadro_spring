@@ -2,6 +2,20 @@
 The prototype must be able to work with a configuration file and a set of external events of a certain format.
 Solution should contain golang (1.20 or newer) source file/files and unit tests (optional)
 
+## Usage
+
+### Running the program
+```sh
+go run .
+```
+You may find `config.json` and `events` files samples in `./sunny_5_skiers`\
+Change variables `configPath` and `eventsPath` in main funciton to change target files.
+### Running tests
+Some tests were configured
+```sh
+go test -v ./utils
+```
+
 ## Configuration (json)
 
 - **Laps**        - Amount of laps for main distance
